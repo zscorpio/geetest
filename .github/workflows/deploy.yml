@@ -1,0 +1,33 @@
+name: Deploy with docker
+
+on:
+  push:
+    tags:
+      - v*.*.*
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+        
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+            username: ${{ secrets.DOCKER_HUB_USERNAME }}
+            password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+            
+      - name: Set current date as env variable
+        run: |
+          TAG="${{ github.event.ref }}"
+          TAG=$(basename "$TAG")
+          echo "DOCKER_TAG=$TAG" >> $GITHUB_OUTPUT
+        id: version
+        
+      - name: Build and push Docker image to DockerHub
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: zscorpio/geetest:${{ steps.version.outputs.DOCKER_TAG }}
